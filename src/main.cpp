@@ -12,7 +12,7 @@
 // Optical Flow Sensors
 #include "Bitcraze_PMW3901.h"
 // Laser altimeter 
-#include "Adafruit_VL6180X.h" // #include <SparkFun_VL6180X.h>
+#include "Adafruit_VL53L0X.h" // #include <SparkFun_VL6180X.h>
 // IMU
 #include "MPU6050_light.h"
 // Current and Voltage sensor
@@ -33,6 +33,8 @@
 #define MAST_DURATION 5
 #define MAST_REVERSE false
 
+#define BATT_CELLS 3 // number of cells in LiPo, used for finding battery percentage
+
 HardwareSerial & debug=Serial; // set whether USB or hardware serial used for debug
 HardwareSerial & plotter=Serial; // set whether USB or hardware serial used for plotting etc.
 
@@ -48,12 +50,13 @@ const int DIR=19;
 const int EN=2;
 
 /* -------------------------- Object instantiation -------------------------- */
+
 Servo servos[6];
 // 6-axis IMU to measure tilt and approximate heading
 MPU6050 imu(Wire);
 bool imuInit=false;
 // laser altimeter in centre of vehicle, measure ride height and scale optical flow values
-Adafruit_VL6180X altimeter;
+Adafruit_VL53L0X altimeter;
 bool altInit=false;
 // Power sensor
 INA226 INA(INA_ADDR);
@@ -80,6 +83,11 @@ char asciiart(int k){ //converter magic? Higher value shunts more right in char 
   static char foo[] = "WX86*3I>!;~:,`. ";
   return foo[k>>4]; //return shunted from array value character
 }
+static inline uint8_t asigmoidal(uint16_t voltage, uint16_t minVoltage, uint16_t maxVoltage) {
+	uint8_t result = 101 - (101 / pow(1 + pow(1.33 * (voltage - minVoltage)/(maxVoltage - minVoltage) ,4.5), 3));
+	return result >= 100 ? 100 : result;
+}
+
 
 void setup() {
   /* --------------------------------- Init IO -------------------------------- */
@@ -161,11 +169,12 @@ void setup() {
 /* ------------------------------ INA variables ----------------------------- */
 
 float Vbus,Vshunt,current,power;
+uint8_t battPercent;
 
 /* --------------------------- Altimeter variables -------------------------- */
 
-uint8_t altitude; // in mm
-float lux; // ambient brightness
+uint8_t altitude=100; // in mm
+// float lux; // ambient brightness
 
 /* ------------------------------ IMU variables ----------------------------- */
 
@@ -176,6 +185,7 @@ float angX,angY,angZ; // estimated angle (pitch,roll,yaw)
 
 /* ------------------------- Optical flow variables ------------------------- */
 
+float flowScaleFactor=1;
 // delta values from each sensor
 int16_t dlX,drX,dlY,drY;
 // integrated values from each sensor
@@ -198,6 +208,7 @@ void loop() {
     Vshunt = INA.getShuntVoltage_mV();
     current = INA.getCurrent_mA();
     power = INA.getPower_mW();
+    battPercent= asigmoidal(Vbus,3.27*BATT_CELLS,4.2*BATT_CELLS);
   }
 
   /* -------------------------------- Read IMU -------------------------------- */
@@ -223,7 +234,7 @@ void loop() {
 
   if (altInit) {
 	  altitude = altimeter.readRange();
-    lux=altimeter.readLux(VL6180X_ALS_GAIN_1);
+    // lux=altimeter.readLux(VL6180X_ALS_GAIN_1);
   }
 
   /* ---------------------------- Read Optical Flow --------------------------- */
@@ -231,6 +242,10 @@ void loop() {
 	if (lFlowInit && rFlowInit) {
     lFlow.readMotionCount(&dlX, &dlY);
     rFlow.readMotionCount(&drX, &drY);
+
+    // scale to mm
+    dlX*=(int16_t)altitude*flowScaleFactor;
+    dlY*=(int16_t)altitude*flowScaleFactor;
 
     // integrate left side
     lX+=dlX;
@@ -267,6 +282,7 @@ void loop() {
     plot("Vshunt" ,Vshunt );
     plot("Current",current);
     plot("Power"  ,power  );
+    plot("Percent"  ,battPercent);
     // Flow
     plot("Heading",heading);
     plot("X"      ,X      );
@@ -281,7 +297,7 @@ void loop() {
     plot("roll"       ,angX);
     // Altimeter
     plot("altitude",altitude);
-    plot("lux",lux);
+    // plot("lux",lux);
   }
   // Plot the optical flow images in ascii, side by side
   static unsigned long prevFlowFrame=0;
