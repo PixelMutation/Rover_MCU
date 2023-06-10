@@ -245,9 +245,9 @@ void loop() {
     // assume X is sideways and Y is forwards
     // as such, dX of both *should* be the same, probably just take the average? 
 
-
-
-
+    //X=?
+    //Y=?
+    //heading=?
 
 
 
