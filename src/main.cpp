@@ -100,6 +100,16 @@ void setup() {
   altimeter.VL6180xDefautSettings();
 
 }
+/* --------------------------- Altimeter variables -------------------------- */
+
+int16_t altitude; // in mm
+
+/* ------------------------------ IMU variables ----------------------------- */
+
+float temperature;
+float accX,accY,accZ; // acceleration
+float gyrX,gyrY,gyrZ; // gyro values
+float angX,angY,angZ; // estimated angle (pitch,roll,yaw)
 
 /* ------------------------- Optical flow variables ------------------------- */
 
@@ -112,15 +122,11 @@ int32_t X,Y;
 
 float heading=0;
 
-/* ------------------------------ IMU variables ----------------------------- */
-
-float temperature;
-float accX,accY,accZ; // acceleration
-float gyrX,gyrY,gyrZ; // gyro values
-float angX,angY,angZ; // estimated angle (pitch,roll,yaw)
-
+// distance between sensors
+const int separation_mm = 200;
 
 void loop() {
+
   /* -------------------------------- Read IMU -------------------------------- */
 
   imu.update();
@@ -141,7 +147,7 @@ void loop() {
 
   /* -------------------------- Read Laser Altimeter -------------------------- */
 
-	int16_t altitude = altimeter.getDistance();
+	altitude = altimeter.getDistance();
 
   /* ---------------------------- Read Optical Flow --------------------------- */
 
@@ -156,7 +162,10 @@ void loop() {
   rX+=drX;
   rY+=drY;
 
-  //! Now need to calculate X, Y and heading from these, ignoring IMU values
+  //! Now need to calculate X, Y and heading from these
+  // ignore IMU values and for now, ignore altimeter. assume delta values are in mm
   // X and Y should be independent of heading
+  // assume X is sideways and Y is forwards
+  // as such, dX of both *should* be the same, probably just take the average? 
 
 }
