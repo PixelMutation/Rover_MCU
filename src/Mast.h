@@ -34,7 +34,7 @@ public:
         run(duration_seconds);
     }
 
-    void extend(uint duration_seconds=5) {
+    void retract(uint duration_seconds=5) {
         digitalWrite(dir,!reverse);
         run(duration_seconds);
     }

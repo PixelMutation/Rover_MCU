@@ -71,7 +71,7 @@ Mast mast(STEP,DIR,EN,MAST_REVERSE,MAST_FREQ);
 
 template <typename T>
 void plot(String name, T val) {
-  plotter.print(">")
+  plotter.print(">");
   plotter.print(name);
   plotter.print(":");
   plotter.println(val);
@@ -231,7 +231,7 @@ void loop() {
 	if (lFlowInit && rFlowInit) {
     lFlow.readMotionCount(&dlX, &dlY);
     rFlow.readMotionCount(&drX, &drY);
-    
+
     // integrate left side
     lX+=dlX;
     lY+=dlY;
@@ -291,14 +291,14 @@ void loop() {
       lFlow.readFrameBuffer(lFrame);
       debug.println("Optical flow frames");
       int i,j,k;
-      for(i=0, k=0; i<35; i++){ //i is Y pixel pos
-        for(j=0; j<35; j++, k++){  //j is X pixel pos
-          debug.print(asciiart(lFrame[k]));
+      for(i=1, k=1; i<36; i++){ //i is Y pixel pos
+        for(j=1; j<36; j++){  //j is X pixel pos
+          debug.print(asciiart(lFrame[(i*j)-1]));
           debug.print(' ');
         }
         debug.print("   ");
-        for(j=0; j<35; j++, k++){  //j is X pixel pos
-          debug.print(asciiart(rFrame[k]));
+        for(j=0; j<35; j++){  //j is X pixel pos
+          debug.print(asciiart(rFrame[(i*j)-1]));
           debug.print(' ');
         }
         debug.println();
