@@ -33,10 +33,14 @@
 #define MAST_DURATION 5
 #define MAST_REVERSE false
 
+#define SHUNT_RESISTANCE 0.002
+
 #define BATT_CELLS 3 // number of cells in LiPo, used for finding battery percentage
 
 HardwareSerial & debug=Serial; // set whether USB or hardware serial used for debug
-HardwareSerial & plotter=Serial; // set whether USB or hardware serial used for plotting etc.
+HardwareSerial & plotter=Serial1; // set whether USB or hardware serial used for plotting etc.
+HardwareSerial & piSer=Serial1; // serial to communicate with Pi
+HardwareSerial & motorSer=Serial2; // serial to communicate with motor driver
 
 /* --------------------------------- Pinout --------------------------------- */
 // Don't change these
@@ -115,9 +119,9 @@ void setup() {
   Serial1.setPinout(0,1);
   Serial1.begin(SER_BAUD);
 
-  // Serial comms with motor
+  // Serial comms with motor, mostly just used as passthrough for the Pi
   Serial2.setPinout(8,9);
-  Serial1.begin(SER_BAUD);
+  Serial2.begin(SER_BAUD);
 
   /* --------------------------------- Scan IO -------------------------------- */
 
@@ -158,7 +162,7 @@ void setup() {
 
   // INA226 current / voltage sensor
   if (INA.begin()) {
-    INA.setMaxCurrentShunt(20, 0.002);
+    INA.setMaxCurrentShunt(20, SHUNT_RESISTANCE);
     inaInit=true;
   } else
     debug.print("Failed to init INA226 current/voltage sensor");
@@ -201,6 +205,15 @@ char lFrame[35*35];
 char rFrame[35*35];
 
 void loop() {
+  /* ------------------------ Motor Serial Passthrough ------------------------ */
+
+  // Motor driver ignores irrelevant commands so just send all commands from the Pi
+  if (piSer.available())
+    motorSer.write(piSer.read());
+  // Send all telemetry to the Pi
+  if (motorSer.available()) 
+    piSer.write(motorSer.read());
+
   /* ---------------------- Read current, voltage, power ---------------------- */
 
   if (inaInit) {
