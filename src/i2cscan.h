@@ -15,7 +15,7 @@ bool reserved_addr(uint8_t addr) {
 int i2cscan(TwoWire * bus, HardwareSerial & ser) {
     i2c_inst_t * instance;
     ser.print("\nI2C");
-    if (bus=&Wire) {
+    if (bus==&Wire) {
         instance=i2c0;
         ser.print(0);
     } else {
@@ -28,7 +28,7 @@ int i2cscan(TwoWire * bus, HardwareSerial & ser) {
 
     for (int addr = 0; addr < (1 << 7); ++addr) {
         if (addr % 16 == 0) {
-            printf("%02x ", addr);
+            ser.printf("%02x ", addr);
         }
 
         // Perform a 1-byte dummy read from the probe address. If a slave
@@ -47,6 +47,8 @@ int i2cscan(TwoWire * bus, HardwareSerial & ser) {
         ser.printf(ret < 0 ? "." : "@");
         ser.printf(addr % 16 == 15 ? "\n" : "  ");
     }
+    ser.println();
+    
     ser.printf("Done.\n");
     return 0;
 }
