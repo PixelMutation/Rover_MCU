@@ -33,12 +33,12 @@
 #define MAST_DURATION 5
 #define MAST_REVERSE false
 
-#define SHUNT_RESISTANCE 0.002
+#define SHUNT_RESISTANCE 0.01
 
 #define BATT_CELLS 3 // number of cells in LiPo, used for finding battery percentage
 
 HardwareSerial & debug=Serial; // set whether USB or hardware serial used for debug
-HardwareSerial & plotter=Serial1; // set whether USB or hardware serial used for plotting etc.
+HardwareSerial & plotter=Serial; // set whether USB or hardware serial used for plotting etc.
 HardwareSerial & piSer=Serial1; // serial to communicate with Pi
 HardwareSerial & motorSer=Serial2; // serial to communicate with motor driver
 
@@ -103,7 +103,7 @@ void setup() {
 
   // Secondary I2C
   Wire1.setSCL(7);
-  Wire1.setSCL(6);
+  Wire1.setSDA(6);
   Wire1.setClock(I2C_CLK);
   Wire1.begin();
 
@@ -114,6 +114,9 @@ void setup() {
 
   // USB serial for debugging
   Serial.begin(SER_BAUD);
+  delay(3000);
+  // while (true)
+  // Serial.print("Hi\n");
 
   // Serial comms with Pi
   Serial1.setPinout(0,1);
@@ -127,7 +130,7 @@ void setup() {
 
   // output I2C scan
   i2cscan(&Wire,debug);
-	i2cscan(&Wire1,debug);
+	// i2cscan(&Wire1,debug);
 
   /* -------------------------- Init attached devices ------------------------- */
   
@@ -140,32 +143,32 @@ void setup() {
     lFlowInit=true;
     lFlow.enableFrameBuffer();
   } else
-    debug.print("Failed to init left PMW3901 optical flow sensor");
+    debug.println("Failed to init left PMW3901 optical flow sensor");
   if (lFlow.begin()) {
     rFlowInit=true;
     rFlow.enableFrameBuffer();
   } else
-    debug.print("Failed to init right PMW3901 optical flow sensor");
+    debug.println("Failed to init right PMW3901 optical flow sensor");
 
   // 6 axis IMU
   if (!imu.begin()) {
     imu.calcOffsets(true,true);
     imuInit=true;
   } else
-    debug.print("Failed to init MPU6050 IMU");
+    debug.println("Failed to init MPU6050 IMU");
     
   // Laser Altimeter
   if (altimeter.begin()) {
     altInit=true;
   } else
-    debug.print("Failed to init VL6180x laser altimeter");
+    debug.println("Failed to init VL6180x laser altimeter");
 
   // INA226 current / voltage sensor
   if (INA.begin()) {
     INA.setMaxCurrentShunt(20, SHUNT_RESISTANCE);
     inaInit=true;
   } else
-    debug.print("Failed to init INA226 current/voltage sensor");
+    debug.println("Failed to init INA226 current/voltage sensor");
     
 
 }
@@ -217,6 +220,7 @@ void loop() {
   /* ---------------------- Read current, voltage, power ---------------------- */
 
   if (inaInit) {
+    INA.get
     Vbus = INA.getBusVoltage();
     Vshunt = INA.getShuntVoltage_mV();
     current = INA.getCurrent_mA();
@@ -306,8 +310,8 @@ void loop() {
     plot("drY"    ,drY    );
     // IMU
     plot("yaw        ",angZ);
-    plot("pitch"      ,angY);
-    plot("roll"       ,angX);
+    plot("pitch"      ,angX);
+    plot("roll"       ,angY);
     // Altimeter
     plot("altitude",altitude);
     // plot("lux",lux);
